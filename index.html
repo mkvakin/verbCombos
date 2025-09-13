@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Verb Flashcards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            transition: background-color 0.5s ease-in-out;
+        }
+        .flashcard-container {
+            min-height: 400px;
+            perspective: 1000px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+            text-align: center;
+        }
+        .flashcard-front {
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+        .flashcard-back {
+            background-color: #6366f1;
+            color: #ffffff;
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-8 flex flex-col items-center">
+        <!-- Title and description -->
+        <div class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">French Verb Flashcards</h1>
+            <p class="text-lg text-gray-600 mt-2">Practice common French verb conjugations.</p>
+        </div>
+        
+        <!-- Verb Selection -->
+        <div id="verb-selection" class="w-full mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">Select a Verb to Practice</h2>
+            <div id="verb-buttons" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <!-- Verb buttons will be injected here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Flashcard UI -->
+        <div id="flashcard-ui" class="hidden w-full">
+            <div class="flex flex-col items-center">
+                <p id="counter" class="text-gray-500 mb-4 text-sm font-medium"></p>
+                <div class="flashcard-container w-full max-w-md h-64 mb-6 cursor-pointer" onclick="flipCard()">
+                    <div id="flashcard" class="flashcard">
+                        <div id="front" class="flashcard-face flashcard-front">
+                            <h3 id="front-text" class="text-3xl font-bold"></h3>
+                        </div>
+                        <div id="back" class="flashcard-face flashcard-back">
+                            <h3 id="back-text" class="text-3xl font-bold"></h3>
+                        </div>
+                    </div>
+                </div>
+                <div id="message-box" class="mt-4 p-4 text-sm text-gray-600 bg-gray-100 rounded-lg hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const verbs = {
+                "Être (to be)": [
+                    { en: "I am", fr: "Je suis" },
+                    { en: "You are", fr: "Tu es" },
+                    { en: "He/she/one is", fr: "Il/elle/on est" },
+                    { en: "We are", fr: "Nous sommes" },
+                    { en: "You are (formal/plural)", fr: "Vous êtes" },
+                    { en: "They are", fr: "Ils/elles sont" }
+                ],
+                "Avoir (to have)": [
+                    { en: "I have", fr: "J'ai" },
+                    { en: "You have", fr: "Tu as" },
+                    { en: "He/she/one has", fr: "Il/elle/on a" },
+                    { en: "We have", fr: "Nous avons" },
+                    { en: "You have (formal/plural)", fr: "Vous avez" },
+                    { en: "They have", fr: "Ils/elles ont" }
+                ],
+                "Aller (to go)": [
+                    { en: "I go", fr: "Je vais" },
+                    { en: "You go", fr: "Tu vas" },
+                    { en: "He/she/one goes", fr: "Il/elle/on va" },
+                    { en: "We go", fr: "Nous allons" },
+                    { en: "You go (formal/plural)", fr: "Vous allez" },
+                    { en: "They go", fr: "Ils/elles vont" }
+                ],
+                "Faire (to do/make)": [
+                    { en: "I do/make", fr: "Je fais" },
+                    { en: "You do/make", fr: "Tu fais" },
+                    { en: "He/she/one does/makes", fr: "Il/elle/on fait" },
+                    { en: "We do/make", fr: "Nous faisons" },
+                    { en: "You do/make (formal/plural)", fr: "Vous faites" },
+                    { en: "They do/make", fr: "Ils/elles font" }
+                ],
+                "Pouvoir (can)": [
+                    { en: "I can", fr: "Je peux" },
+                    { en: "You can", fr: "Tu peux" },
+                    { en: "He/she/one can", fr: "Il/elle/on peut" },
+                    { en: "We can", fr: "Nous pouvons" },
+                    { en: "You can (formal/plural)", fr: "Vous pouvez" },
+                    { en: "They can", fr: "Ils/elles peuvent" }
+                ],
+                "Vouloir (to want)": [
+                    { en: "I want", fr: "Je veux" },
+                    { en: "You want", fr: "Tu veux" },
+                    { en: "He/she/one wants", fr: "Il/elle/on veut" },
+                    { en: "We want", fr: "Nous voulons" },
+                    { en: "You want (formal/plural)", fr: "Vous voulez" },
+                    { en: "They want", fr: "Ils/elles veulent" }
+                ],
+                "Dire (to say/tell)": [
+                    { en: "I say", fr: "Je dis" },
+                    { en: "You say", fr: "Tu dis" },
+                    { en: "He/she/one says", fr: "Il/elle/on dit" },
+                    { en: "We say", fr: "Nous disons" },
+                    { en: "You say (formal/plural)", fr: "Vous dites" },
+                    { en: "They say", fr: "Ils/elles disent" }
+                ],
+                "Prendre (to take)": [
+                    { en: "I take", fr: "Je prends" },
+                    { en: "You take", fr: "Tu prends" },
+                    { en: "He/she/one takes", fr: "Il/elle/on prend" },
+                    { en: "We take", fr: "Nous prenons" },
+                    { en: "You take (formal/plural)", fr: "Vous prenez" },
+                    { en: "They take", fr: "Ils/elles prennent" }
+                ]
+            };
+
+            const verbSelection = document.getElementById('verb-selection');
+            const verbButtons = document.getElementById('verb-buttons');
+            const flashcardUI = document.getElementById('flashcard-ui');
+            const flashcard = document.getElementById('flashcard');
+            const frontText = document.getElementById('front-text');
+            const backText = document.getElementById('back-text');
+            const counterElement = document.getElementById('counter');
+            const messageBox = document.getElementById('message-box');
+
+            let currentVerbData = [];
+            let currentIndex = 0;
+            let attemptCount = 0;
+            const maxAttempts = 15;
+            let isFlipped = false;
+
+            // Function to display messages
+            function showMessage(text, isError = false) {
+                messageBox.textContent = text;
+                messageBox.classList.remove('hidden');
+                messageBox.classList.toggle('text-red-600', isError);
+                messageBox.classList.toggle('bg-red-100', isError);
+                messageBox.classList.toggle('text-gray-600', !isError);
+                messageBox.classList.toggle('bg-gray-100', !isError);
+            }
+
+            // Shuffle function
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            // Start a new round
+            function startRound() {
+                shuffle(currentVerbData);
+                currentIndex = 0;
+                attemptCount = 0;
+                isFlipped = false;
+                flashcard.classList.remove('flipped');
+                frontText.textContent = currentVerbData[currentIndex].en;
+                backText.textContent = ""; // Clear the back of the card
+                updateCounter();
+            }
+
+            // Update the attempt counter display
+            function updateCounter() {
+                counterElement.textContent = `Card ${attemptCount + 1} of ${maxAttempts}`;
+            }
+
+            // Flip the card and advance
+            window.flipCard = function() {
+                if (isFlipped) {
+                    // Card is already flipped, move to the next card
+                    if (attemptCount < maxAttempts - 1) {
+                        attemptCount++;
+                        currentIndex = (currentIndex + 1) % currentVerbData.length;
+                        frontText.textContent = currentVerbData[currentIndex].en;
+                        backText.textContent = "";
+                        isFlipped = false;
+                        flashcard.classList.remove('flipped');
+                        updateCounter();
+                        showMessage('Click to reveal the French translation.', false);
+                    } else {
+                        // End of the round, return to verb selection
+                        showMessage('Round complete! Select a new verb to continue.', false);
+                        flashcardUI.classList.add('hidden');
+                        verbSelection.classList.remove('hidden');
+                        flashcard.classList.remove('flipped');
+                    }
+                } else {
+                    // Card is not flipped, show the French translation
+                    backText.textContent = currentVerbData[currentIndex].fr;
+                    flashcard.classList.add('flipped');
+                    isFlipped = true;
+                    showMessage('Click to see the next card.', false);
+                }
+            };
+
+            // Initialize verb selection buttons
+            for (const verb in verbs) {
+                const button = document.createElement('button');
+                button.textContent = verb;
+                button.className = "py-3 px-6 bg-indigo-500 text-white rounded-lg shadow-md hover:bg-indigo-600 transition-colors";
+                button.onclick = () => {
+                    currentVerbData = verbs[verb];
+                    verbSelection.classList.add('hidden');
+                    flashcardUI.classList.remove('hidden');
+                    startRound();
+                };
+                verbButtons.appendChild(button);
+            }
+
+            // Initially, display the verb selection screen
+            flashcardUI.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
